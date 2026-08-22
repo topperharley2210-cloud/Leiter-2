@@ -50,3 +50,9 @@ Prüfstatus V18:
 - Grau: kein Prüftermin hinterlegt
 - Statusübersicht auf der Startseite
 - Historienansicht pro Arbeitsmittel
+
+V19:
+- Prüfung kann nur mit Prüfer-Unterschrift gespeichert werden
+- Speichern-Schaltfläche bleibt bis zur Unterschrift deaktiviert
+- Nächster Prüftermin kann automatisch um 6, 12 oder 24 Monate gesetzt werden
+- Neuer Prüftermin wird in die Stammdaten übernommen und im Prüfprotokoll gespeichert
