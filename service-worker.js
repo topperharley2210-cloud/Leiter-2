@@ -1,4 +1,4 @@
-const CACHE = "leitercheck-v7";
+const CACHE = "leitercheck-v10";
 const APP_FILES = [
   "./",
   "./index.html",

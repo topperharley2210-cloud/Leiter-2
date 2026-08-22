@@ -65,7 +65,7 @@
     .field select:focus,.field input:focus,.field textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,95,191,.12)}
 
     .form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
-    .toolbar{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:16px}
+    .toolbar{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:12px;margin-bottom:16px}
     .statbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
     .pill{background:#eef3f9;border-radius:999px;padding:8px 12px;font-weight:700;color:#40516a}
 
@@ -81,6 +81,10 @@
     .tag{display:inline-block;margin-top:8px;padding:5px 9px;border-radius:999px;font-size:.82rem;font-weight:800;background:#edf3fa;color:#35506e}
     .due-soon{background:#fff3e6;color:#a65400}
     .due-over{background:#feecec;color:#b42318}
+    .release-released{background:#e8f7ec;color:#1d7b32}
+    .release-restricted{background:#fff3e6;color:#a65400}
+    .release-blocked{background:#feecec;color:#b42318;font-weight:800}
+
     .item-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 
     .checklist{display:grid;gap:14px}
@@ -144,6 +148,91 @@
   </div>
 </section>
 
+
+<section id="cloudScreen" class="hidden">
+  <div class="screen-header">
+    <div class="screen-title"><h2>Cloud & Anmeldung</h2><p>Gemeinsamer Datenbestand auf mehreren Geräten</p></div>
+    <button class="back-btn" onclick="goHome()">← Startseite</button>
+  </div>
+
+  <div class="panel">
+    <h3>1. Cloud-Verbindung</h3>
+    <p class="meta">Einmalig die Projekt-URL und den öffentlichen Anon-Key deines Supabase-Projekts eintragen. Der Service-Role-Key gehört niemals in die App.</p>
+    <div class="form-grid">
+      <div class="field">
+        <label for="cloudUrl">Supabase Projekt-URL</label>
+        <input id="cloudUrl" placeholder="https://xxxx.supabase.co">
+      </div>
+      <div class="field">
+        <label for="cloudAnonKey">Anon / Publishable Key</label>
+        <input id="cloudAnonKey" type="password" placeholder="Öffentlicher Browser-Key">
+      </div>
+    </div>
+    <div class="actions" style="justify-content:flex-start">
+      <button class="primary-btn" onclick="saveCloudConfig()">Cloud-Verbindung speichern</button>
+      <button class="secondary-btn" onclick="clearCloudConfig()">Verbindung entfernen</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>2. Benutzerkonto</h3>
+    <div id="cloudLoggedOut">
+      <div class="form-grid">
+        <div class="field"><label for="cloudEmail">E-Mail</label><input id="cloudEmail" type="email" autocomplete="username"></div>
+        <div class="field"><label for="cloudPassword">Passwort</label><input id="cloudPassword" type="password" autocomplete="current-password"></div>
+      </div>
+      <div class="actions" style="justify-content:flex-start">
+        <button class="primary-btn" onclick="cloudLogin()">Anmelden</button>
+        <button class="secondary-btn" onclick="cloudSignup()">Konto erstellen</button>
+      </div>
+      <p class="meta">Wenn E-Mail-Bestätigung im Backend aktiviert ist, muss ein neues Konto zuerst über die Bestätigungs-E-Mail freigeschaltet werden.</p>
+    </div>
+    <div id="cloudLoggedIn" class="hidden">
+      <div class="statbar">
+        <span class="pill" id="cloudUserLabel">Angemeldet</span>
+        <span class="pill" id="cloudRoleLabel">Rolle</span>
+      </div>
+      <div class="actions" style="justify-content:flex-start">
+        <button class="secondary-btn" onclick="cloudLogout()">Abmelden</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="cloudOrgPanel">
+    <h3>3. Betrieb / Arbeitsbereich</h3>
+    <div id="cloudNoOrg">
+      <p class="meta">Der erste Administrator erstellt einen Betrieb. Weitere Prüfer können anschließend mit dem Einladungscode beitreten.</p>
+      <div class="form-grid">
+        <div class="field"><label for="cloudOrgName">Betriebsname</label><input id="cloudOrgName" placeholder="z. B. Musterbetrieb GmbH"></div>
+        <div class="field"><label for="cloudDisplayName">Anzeigename</label><input id="cloudDisplayName" placeholder="z. B. Max Mustermann"></div>
+      </div>
+      <div class="actions" style="justify-content:flex-start">
+        <button class="primary-btn" onclick="cloudCreateOrg()">Betrieb erstellen</button>
+      </div>
+      <hr style="border:0;border-top:1px solid #e1e6ee;margin:22px 0">
+      <div class="form-grid">
+        <div class="field"><label for="cloudInviteCode">Einladungscode</label><input id="cloudInviteCode" placeholder="Code vom Administrator"></div>
+        <div class="field"><label for="cloudJoinName">Anzeigename</label><input id="cloudJoinName" placeholder="Dein Name"></div>
+      </div>
+      <div class="actions" style="justify-content:flex-start">
+        <button class="secondary-btn" onclick="cloudJoinOrg()">Mit Einladungscode beitreten</button>
+      </div>
+    </div>
+
+    <div id="cloudHasOrg" class="hidden">
+      <div class="statbar">
+        <span class="pill" id="cloudOrgLabel">Betrieb</span>
+        <span class="pill" id="cloudInviteLabel">Einladungscode</span>
+      </div>
+      <div class="actions" style="justify-content:flex-start">
+        <button class="primary-btn" onclick="cloudPullState(true)">☁️ Cloud → Gerät</button>
+        <button class="secondary-btn" onclick="cloudPushState(true)">⬆️ Gerät → Cloud</button>
+      </div>
+      <p class="meta" id="cloudSyncStatus">Noch nicht synchronisiert.</p>
+    </div>
+  </div>
+</section>
+
 <section id="homeScreen">
   <header class="header">
     <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
@@ -154,6 +243,8 @@
   </header>
 
   <section class="grid">
+    <button class="tile" onclick="showCloud()"><div class="icon">☁️</div><h2>Cloud & Benutzer</h2><p>Anmelden und synchronisieren</p></button>
+
     <button class="tile primary" onclick="showInspection()"><div class="icon">🔍</div><h2>Prüfung starten</h2><p>Neue Prüfung durchführen</p></button>
     <button class="tile" onclick="showScanner()"><div class="icon">📷</div><h2>QR-Code scannen</h2><p>Arbeitsmittel direkt öffnen</p></button>
     <button class="tile" onclick="showEquipmentList()"><div class="icon">🪜</div><h2>Leitern &amp; Tritte</h2><div class="count"><span class="big blue" id="equipmentCount">0</span> erfasst</div></button>
@@ -194,6 +285,12 @@
       <input id="searchInput" type="search" placeholder="Suche nach Nummer, Bezeichnung, Hersteller oder Standort" oninput="renderEquipmentList()">
       <select id="typeFilter" onchange="renderEquipmentList()"><option value="">Alle Typen</option><option>Stehleiter</option><option>Anlegeleiter</option><option>Mehrzweckleiter</option><option>Tritt</option></select>
       <select id="locationFilter" onchange="renderEquipmentList()"><option value="">Alle Standorte</option></select>
+      <select id="releaseFilter" onchange="renderEquipmentList()">
+        <option value="">Alle Freigaben</option>
+        <option value="released">Freigegeben</option>
+        <option value="restricted">Eingeschränkt</option>
+        <option value="blocked">Gesperrt</option>
+      </select>
     </div>
     <div class="statbar">
       <span class="pill" id="visibleCount">0 angezeigt</span>
@@ -416,6 +513,30 @@
 
 
 
+
+  <div class="panel">
+    <h3>Benutzer & Rollen</h3>
+    <p class="meta">Lokale Benutzerverwaltung als Vorbereitung für die spätere Cloud-Synchronisation.</p>
+    <div class="form-grid">
+      <div class="field">
+        <label for="newUserName">Name</label>
+        <input id="newUserName" placeholder="z. B. Max Mustermann">
+      </div>
+      <div class="field">
+        <label for="newUserRole">Rolle</label>
+        <select id="newUserRole">
+          <option value="examiner">Prüfer</option>
+          <option value="admin">Administrator</option>
+        </select>
+      </div>
+    </div>
+    <div class="actions" style="justify-content:flex-start">
+      <button class="primary-btn" onclick="addLocalUser()">Benutzer hinzufügen</button>
+    </div>
+    <div id="userManagementList" class="list" style="margin-top:14px"></div>
+    <p class="meta" style="margin-top:10px">Administrator: volle Verwaltung. Prüfer: Prüfungen durchführen und Protokolle ansehen. Die Anmeldung wird mit der Cloud-Version ergänzt.</p>
+  </div>
+
   <div class="panel">
     <h3>Datensicherung</h3>
     <p class="meta">Alle LeiterCheck-Daten können als Sicherungsdatei gespeichert und später wieder eingelesen werden.</p>
@@ -476,6 +597,23 @@
       <div class="summary-box"><strong id="sumTotal">0</strong><span>Prüfpunkte</span></div>
     </div>
     <div id="resultBanner" class="result-banner"></div>
+
+    <div class="panel" id="releaseDecisionPanel" style="box-shadow:none;border:1px solid #e1e6ee;margin-top:20px">
+      <h3>Freigabestatus</h3>
+      <div class="field">
+        <label for="releaseStatus">Arbeitsmittel nach der Prüfung</label>
+        <select id="releaseStatus" onchange="handleReleaseStatusChange()">
+          <option value="released">🟢 Freigegeben</option>
+          <option value="restricted">🟡 Weiter verwendbar mit Einschränkung</option>
+          <option value="blocked">🚫 Gesperrt</option>
+        </select>
+      </div>
+      <div class="field hidden" id="releaseNoteWrap">
+        <label for="releaseNote">Hinweis zur Einschränkung / Sperrung</label>
+        <textarea id="releaseNote" placeholder="z. B. Nutzung bis Reparatur nur unter Aufsicht"></textarea>
+      </div>
+      <p class="meta" id="releaseStatusHelp"></p>
+    </div>
 
     <div class="panel" style="box-shadow:none;border:1px solid #e1e6ee;margin-top:20px">
       <h3>Nächster Prüftermin</h3>
@@ -555,16 +693,18 @@ function loadEquipment(){
     list = starterEquipment;
     localStorage.setItem("leitercheck_equipment", JSON.stringify(list));
   }
+  list = list.map(x => ({releaseStatus:"released", releaseNote:"", ...x}));
   return list;
 }
 function saveEquipmentList(list){ localStorage.setItem("leitercheck_equipment", JSON.stringify(list)); }
 function showOnly(id){
   if(id !== "scannerScreen") stopScanner();
-  ["homeScreen","privacyScreen","equipmentHistoryScreen","equipmentListScreen","qrBatchScreen","scannerScreen","qrScreen","editEquipmentScreen","addEquipmentScreen","dueScreen","defectScreen","settingsScreen","inspectionScreen","summaryScreen","protocolDetailScreen","protocolScreen"].forEach(x => document.getElementById(x).classList.toggle("hidden", x !== id));
+  ["homeScreen","cloudScreen","privacyScreen","equipmentHistoryScreen","equipmentListScreen","qrBatchScreen","scannerScreen","qrScreen","editEquipmentScreen","addEquipmentScreen","dueScreen","defectScreen","settingsScreen","inspectionScreen","summaryScreen","protocolDetailScreen","protocolScreen"].forEach(x => document.getElementById(x).classList.toggle("hidden", x !== id));
   window.scrollTo({top:0,behavior:"smooth"});
 }
 function goHome(){ updateHomeCounts();
-updateStatusOverview(); showOnly("homeScreen"); }
+updateStatusOverview();
+updateDashboard(); showOnly("homeScreen"); }
 
 
 
@@ -600,8 +740,10 @@ function populateNewLocationSelect(selected=""){
   if(selected && locations.includes(selected)) sel.value = selected;
 }
 function showSettings(){
+  if(!requireAdmin()) return;
   loadGeneralSettingsIntoForm();
   renderSettingsLocations();
+  renderLocalUsers();
   showOnly("settingsScreen");
 }
 function renderSettingsLocations(){
@@ -661,6 +803,7 @@ function renameLocation(index){
   renderSettingsLocations();
   updateHomeCounts();
 updateStatusOverview();
+updateDashboard();
 }
 function deleteLocation(index){
   const locations = loadLocations();
@@ -676,7 +819,8 @@ function deleteLocation(index){
   saveLocations(locations);
   renderSettingsLocations();
 }
-function showAddEquipment(){ clearAddForm(); showOnly("addEquipmentScreen"); }
+function showAddEquipment(){
+  if(!requireAdmin()) return; clearAddForm(); showOnly("addEquipmentScreen"); }
 function clearAddForm(){
   ["newId","newName","newManufacturer","newNextDate","newNotes"].forEach(id => document.getElementById(id).value = "");
   populateNewLocationSelect();
@@ -1170,6 +1314,7 @@ function populateEditLocationSelect(selected=""){
 }
 
 function editEquipment(id){
+  if(!requireAdmin()) return;
   const eq = loadEquipment().find(x => x.id === id);
   if(!eq) return;
   currentEditEquipmentId = id;
@@ -1233,6 +1378,478 @@ function saveEditedEquipment(){
   showEquipmentList();
   updateHomeCounts();
 updateStatusOverview();
+updateDashboard();
+}
+
+
+
+
+const CLOUD_DATA_KEYS = [
+  "leitercheck_equipment",
+  "leitercheck_locations",
+  "leitercheck_general_settings",
+  "leitercheck_protocols",
+  "leitercheck_defect_status",
+  "leitercheck_users"
+];
+
+let cloudApplying = false;
+let cloudSyncTimer = null;
+
+function cloudConfig(){
+  try { return JSON.parse(localStorage.getItem("leitercheck_cloud_config") || "{}"); }
+  catch(e){ return {}; }
+}
+function cloudSession(){
+  try { return JSON.parse(localStorage.getItem("leitercheck_cloud_session") || "{}"); }
+  catch(e){ return {}; }
+}
+function cloudOrg(){
+  try { return JSON.parse(localStorage.getItem("leitercheck_cloud_org") || "{}"); }
+  catch(e){ return {}; }
+}
+
+function normalizeCloudUrl(url){
+  return String(url || "").trim().replace(/\/+$/,"");
+}
+
+function saveCloudConfig(){
+  const url = normalizeCloudUrl(document.getElementById("cloudUrl")?.value);
+  const anonKey = document.getElementById("cloudAnonKey")?.value.trim();
+  if(!url || !/^https:\/\/.+\.supabase\.co$/i.test(url)){
+    alert("Bitte eine gültige Supabase-Projekt-URL eintragen.");
+    return;
+  }
+  if(!anonKey){
+    alert("Bitte den öffentlichen Anon-/Publishable-Key eintragen.");
+    return;
+  }
+  localStorage.setItem("leitercheck_cloud_config", JSON.stringify({url,anonKey}));
+  alert("Cloud-Verbindung gespeichert.");
+  renderCloudScreen();
+}
+function clearCloudConfig(){
+  if(!confirm("Cloud-Verbindung und lokale Anmeldesitzung entfernen? Die LeiterCheck-Daten selbst bleiben erhalten.")) return;
+  localStorage.removeItem("leitercheck_cloud_config");
+  localStorage.removeItem("leitercheck_cloud_session");
+  localStorage.removeItem("leitercheck_cloud_org");
+  renderCloudScreen();
+  applyCloudRolePermissions();
+}
+
+async function cloudRequest(path, options={}){
+  const cfg = cloudConfig();
+  if(!cfg.url || !cfg.anonKey) throw new Error("Cloud-Verbindung ist noch nicht eingerichtet.");
+
+  let session = cloudSession();
+  if(options.auth !== false && session.refresh_token && session.expires_at && Date.now() > (session.expires_at - 60000)){
+    session = await cloudRefreshSession();
+  }
+
+  const headers = {
+    "apikey":cfg.anonKey,
+    "Content-Type":"application/json",
+    ...(options.headers || {})
+  };
+  if(options.auth !== false && session.access_token){
+    headers["Authorization"] = `Bearer ${session.access_token}`;
+  }
+
+  const res = await fetch(cfg.url + path, {
+    method:options.method || "GET",
+    headers,
+    body: options.body === undefined ? undefined : JSON.stringify(options.body)
+  });
+  const text = await res.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch(e){ data = text; }
+  if(!res.ok){
+    const msg = data?.msg || data?.message || data?.error_description || data?.error || `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  return data;
+}
+
+function saveCloudSession(data){
+  const expiresIn = Number(data?.expires_in || 3600);
+  const session = {
+    access_token:data?.access_token || "",
+    refresh_token:data?.refresh_token || "",
+    user:data?.user || {},
+    expires_at:Date.now() + expiresIn*1000
+  };
+  localStorage.setItem("leitercheck_cloud_session", JSON.stringify(session));
+  return session;
+}
+
+async function cloudRefreshSession(){
+  const cfg = cloudConfig();
+  const s = cloudSession();
+  if(!s.refresh_token) return s;
+  const res = await fetch(cfg.url + "/auth/v1/token?grant_type=refresh_token", {
+    method:"POST",
+    headers:{"apikey":cfg.anonKey,"Content-Type":"application/json"},
+    body:JSON.stringify({refresh_token:s.refresh_token})
+  });
+  const data = await res.json();
+  if(!res.ok) throw new Error(data?.msg || data?.error_description || "Sitzung konnte nicht erneuert werden.");
+  return saveCloudSession(data);
+}
+
+async function cloudLogin(){
+  try{
+    const cfg=cloudConfig();
+    if(!cfg.url || !cfg.anonKey) throw new Error("Bitte zuerst die Cloud-Verbindung einrichten.");
+    const email=document.getElementById("cloudEmail").value.trim();
+    const password=document.getElementById("cloudPassword").value;
+    if(!email || !password) throw new Error("E-Mail und Passwort sind erforderlich.");
+    const data=await cloudRequest("/auth/v1/token?grant_type=password",{auth:false,method:"POST",body:{email,password}});
+    saveCloudSession(data);
+    await cloudLoadMembership();
+    renderCloudScreen();
+    applyCloudRolePermissions();
+    if(cloudOrg().org_id) await cloudPullState(false);
+  }catch(err){ alert("Anmeldung fehlgeschlagen: "+err.message); }
+}
+
+async function cloudSignup(){
+  try{
+    const cfg=cloudConfig();
+    if(!cfg.url || !cfg.anonKey) throw new Error("Bitte zuerst die Cloud-Verbindung einrichten.");
+    const email=document.getElementById("cloudEmail").value.trim();
+    const password=document.getElementById("cloudPassword").value;
+    if(!email || password.length<6) throw new Error("Bitte E-Mail und ein Passwort mit mindestens 6 Zeichen eingeben.");
+    const data=await cloudRequest("/auth/v1/signup",{auth:false,method:"POST",body:{email,password}});
+    if(data?.access_token) saveCloudSession(data);
+    alert(data?.access_token ? "Konto erstellt und angemeldet." : "Konto erstellt. Bitte gegebenenfalls die Bestätigungs-E-Mail öffnen und danach anmelden.");
+    if(data?.access_token) await cloudLoadMembership();
+    renderCloudScreen();
+  }catch(err){ alert("Konto konnte nicht erstellt werden: "+err.message); }
+}
+
+function cloudLogout(){
+  localStorage.removeItem("leitercheck_cloud_session");
+  localStorage.removeItem("leitercheck_cloud_org");
+  renderCloudScreen();
+  applyCloudRolePermissions();
+}
+
+async function cloudCreateOrg(){
+  try{
+    const s=cloudSession();
+    if(!s.access_token) throw new Error("Bitte zuerst anmelden.");
+    const name=document.getElementById("cloudOrgName").value.trim();
+    const displayName=document.getElementById("cloudDisplayName").value.trim();
+    if(!name || !displayName) throw new Error("Betriebsname und Anzeigename sind erforderlich.");
+    const data=await cloudRequest("/rest/v1/rpc/create_leitercheck_org",{method:"POST",body:{p_name:name,p_display_name:displayName}});
+    await cloudLoadMembership(data);
+    await cloudPushState(false);
+    renderCloudScreen();
+    applyCloudRolePermissions();
+  }catch(err){ alert("Betrieb konnte nicht erstellt werden: "+err.message); }
+}
+
+async function cloudJoinOrg(){
+  try{
+    const s=cloudSession();
+    if(!s.access_token) throw new Error("Bitte zuerst anmelden.");
+    const code=document.getElementById("cloudInviteCode").value.trim();
+    const displayName=document.getElementById("cloudJoinName").value.trim();
+    if(!code || !displayName) throw new Error("Einladungscode und Anzeigename sind erforderlich.");
+    await cloudRequest("/rest/v1/rpc/join_leitercheck_org",{method:"POST",body:{p_invite_code:code,p_display_name:displayName}});
+    await cloudLoadMembership();
+    await cloudPullState(false);
+    renderCloudScreen();
+    applyCloudRolePermissions();
+  }catch(err){ alert("Beitritt fehlgeschlagen: "+err.message); }
+}
+
+async function cloudLoadMembership(preferredOrgId=null){
+  const s=cloudSession();
+  if(!s.user?.id) return null;
+  const rows=await cloudRequest(`/rest/v1/leitercheck_memberships?user_id=eq.${encodeURIComponent(s.user.id)}&select=org_id,role,display_name`);
+  if(!Array.isArray(rows) || !rows.length){
+    localStorage.removeItem("leitercheck_cloud_org");
+    return null;
+  }
+  let membership = preferredOrgId ? rows.find(r=>r.org_id===preferredOrgId) : rows[0];
+  if(!membership) membership=rows[0];
+  const orgRows=await cloudRequest(`/rest/v1/leitercheck_organizations?id=eq.${encodeURIComponent(membership.org_id)}&select=id,name,invite_code`);
+  const org=Array.isArray(orgRows)&&orgRows[0] ? orgRows[0] : {id:membership.org_id,name:"Betrieb",invite_code:""};
+  const merged={org_id:membership.org_id,role:membership.role,display_name:membership.display_name,name:org.name,invite_code:org.invite_code};
+  localStorage.setItem("leitercheck_cloud_org",JSON.stringify(merged));
+  return merged;
+}
+
+function buildCloudState(){
+  const result={};
+  CLOUD_DATA_KEYS.forEach(key=>{
+    try { result[key]=JSON.parse(localStorage.getItem(key) || (key.endsWith("_defect_status") ? "{}" : "[]")); }
+    catch(e){ result[key]=null; }
+  });
+  return {
+    schemaVersion:1,
+    updatedAt:new Date().toISOString(),
+    payload:result
+  };
+}
+
+async function cloudPushState(showMessage=true){
+  try{
+    const s=cloudSession(), org=cloudOrg();
+    if(!s.access_token || !org.org_id){
+      if(showMessage) alert("Bitte zuerst anmelden und einem Betrieb beitreten.");
+      return;
+    }
+    const state=buildCloudState();
+    await cloudRequest("/rest/v1/leitercheck_state?on_conflict=org_id",{
+      method:"POST",
+      headers:{"Prefer":"resolution=merge-duplicates,return=minimal"},
+      body:{org_id:org.org_id,data:state,updated_by:s.user.id}
+    });
+    const el=document.getElementById("cloudSyncStatus");
+    if(el) el.textContent="Zuletzt hochgeladen: "+new Date().toLocaleString("de-DE");
+    if(showMessage) alert("Daten wurden in die Cloud übertragen.");
+  }catch(err){
+    if(showMessage) alert("Cloud-Upload fehlgeschlagen: "+err.message);
+  }
+}
+
+async function cloudPullState(showMessage=true){
+  try{
+    const s=cloudSession(), org=cloudOrg();
+    if(!s.access_token || !org.org_id){
+      if(showMessage) alert("Bitte zuerst anmelden und einem Betrieb beitreten.");
+      return;
+    }
+    const rows=await cloudRequest(`/rest/v1/leitercheck_state?org_id=eq.${encodeURIComponent(org.org_id)}&select=data,updated_at`);
+    if(!Array.isArray(rows) || !rows.length || !rows[0].data?.payload){
+      if(showMessage) alert("In der Cloud sind noch keine LeiterCheck-Daten gespeichert.");
+      return;
+    }
+    cloudApplying=true;
+    try{
+      const payload=rows[0].data.payload;
+      CLOUD_DATA_KEYS.forEach(key=>{
+        if(payload[key] !== undefined && payload[key] !== null){
+          localStorage.setItem(key,JSON.stringify(payload[key]));
+        }
+      });
+    }finally{
+      cloudApplying=false;
+    }
+    updateHomeCounts();
+    updateStatusOverview();
+    updateDashboard();
+    const el=document.getElementById("cloudSyncStatus");
+    if(el) el.textContent="Cloud-Stand geladen: "+new Date(rows[0].updated_at).toLocaleString("de-DE");
+    if(showMessage) alert("Cloud-Daten wurden auf dieses Gerät geladen.");
+  }catch(err){
+    if(showMessage) alert("Cloud-Download fehlgeschlagen: "+err.message);
+  }
+}
+
+function scheduleCloudAutoSync(){
+  if(cloudApplying) return;
+  const s=cloudSession(), org=cloudOrg();
+  if(!s.access_token || !org.org_id) return;
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer=setTimeout(()=>cloudPushState(false),1200);
+}
+
+function installCloudLocalStorageWatcher(){
+  if(window.__leitercheckCloudWatcher) return;
+  window.__leitercheckCloudWatcher=true;
+  const original=Storage.prototype.setItem;
+  Storage.prototype.setItem=function(key,value){
+    original.call(this,key,value);
+    if(this===localStorage && CLOUD_DATA_KEYS.includes(key)) scheduleCloudAutoSync();
+  };
+}
+
+function currentCloudRole(){
+  const s=cloudSession(), org=cloudOrg();
+  return s.access_token && org.org_id ? org.role : null;
+}
+function requireAdmin(){
+  const role=currentCloudRole();
+  if(role && role!=="admin"){
+    alert("Diese Funktion ist nur für Administratoren freigegeben.");
+    return false;
+  }
+  return true;
+}
+
+function applyCloudRolePermissions(){
+  const role=currentCloudRole();
+  document.body.dataset.cloudRole=role || "local";
+}
+
+function showCloud(){
+  renderCloudScreen();
+  showOnly("cloudScreen");
+}
+
+async function renderCloudScreen(){
+  const cfg=cloudConfig(), s=cloudSession(), org=cloudOrg();
+  const url=document.getElementById("cloudUrl"), key=document.getElementById("cloudAnonKey");
+  if(url) url.value=cfg.url||"";
+  if(key) key.value=cfg.anonKey||"";
+
+  const logged=Boolean(s.access_token);
+  document.getElementById("cloudLoggedOut")?.classList.toggle("hidden",logged);
+  document.getElementById("cloudLoggedIn")?.classList.toggle("hidden",!logged);
+  if(logged){
+    const email=s.user?.email || "Angemeldet";
+    const ul=document.getElementById("cloudUserLabel"); if(ul) ul.textContent=email;
+    if(!org.org_id){
+      try{ await cloudLoadMembership(); }catch(e){}
+    }
+  }
+  const current=cloudOrg();
+  const hasOrg=Boolean(logged && current.org_id);
+  document.getElementById("cloudNoOrg")?.classList.toggle("hidden",hasOrg);
+  document.getElementById("cloudHasOrg")?.classList.toggle("hidden",!hasOrg);
+  if(hasOrg){
+    const ol=document.getElementById("cloudOrgLabel"); if(ol) ol.textContent=`${current.name} · ${current.role==="admin"?"Administrator":"Prüfer"}`;
+    const rl=document.getElementById("cloudRoleLabel"); if(rl) rl.textContent=current.role==="admin"?"Administrator":"Prüfer";
+    const il=document.getElementById("cloudInviteLabel");
+    if(il) il.textContent=current.role==="admin" ? `Einladung: ${current.invite_code}` : "Mitglied";
+  }
+}
+
+function loadLocalUsers(){
+  let users;
+  try { users = JSON.parse(localStorage.getItem("leitercheck_users") || "[]"); } catch(e){ users=[]; }
+  if(!Array.isArray(users) || !users.length){
+    users = [{id:"admin-1", name:"Administrator", role:"admin"}];
+    localStorage.setItem("leitercheck_users", JSON.stringify(users));
+  }
+  return users;
+}
+
+function saveLocalUsers(users){
+  localStorage.setItem("leitercheck_users", JSON.stringify(users));
+}
+
+function addLocalUser(){
+  const name = document.getElementById("newUserName")?.value.trim();
+  const role = document.getElementById("newUserRole")?.value || "examiner";
+  if(!name){ alert("Bitte einen Namen eingeben."); return; }
+  const users = loadLocalUsers();
+installCloudLocalStorageWatcher();
+applyCloudRolePermissions();
+  users.push({id:"u-"+Date.now(), name, role});
+  saveLocalUsers(users);
+  document.getElementById("newUserName").value="";
+  renderLocalUsers();
+}
+
+function deleteLocalUser(id){
+  const users = loadLocalUsers();
+installCloudLocalStorageWatcher();
+applyCloudRolePermissions();
+  const target = users.find(u=>u.id===id);
+  if(!target) return;
+  const admins = users.filter(u=>u.role==="admin");
+  if(target.role==="admin" && admins.length<=1){
+    alert("Der letzte Administrator kann nicht gelöscht werden.");
+    return;
+  }
+  if(!confirm(`Benutzer "${target.name}" wirklich löschen?`)) return;
+  saveLocalUsers(users.filter(u=>u.id!==id));
+  renderLocalUsers();
+}
+
+function renderLocalUsers(){
+  const box = document.getElementById("userManagementList");
+  if(!box) return;
+  const users = loadLocalUsers();
+installCloudLocalStorageWatcher();
+applyCloudRolePermissions();
+  box.innerHTML = users.map(u=>`
+    <div class="list-item">
+      <div>
+        <h4>${escapeHtml(u.name)}</h4>
+        <div class="meta">${u.role==="admin" ? "Administrator · volle Verwaltung" : "Prüfer · Prüfungen und Protokolle"}</div>
+      </div>
+      <button class="danger-btn" onclick="deleteLocalUser('${jsSafe(u.id)}')">Löschen</button>
+    </div>
+  `).join("");
+}
+
+function updateDashboard(){
+  const equipment = loadEquipment();
+  const blocked = equipment.filter(x => (x.releaseStatus || "released")==="blocked").length;
+  const due30 = equipment.filter(x => equipmentStatus(x).key==="due").length;
+  const b = document.getElementById("dashBlocked");
+  const d = document.getElementById("dashDue30");
+  if(b) b.textContent = `🚫 ${blocked} gesperrt`;
+  if(d) d.textContent = `🟡 ${due30} in 30 Tagen fällig`;
+
+  const recentBox = document.getElementById("dashboardRecent");
+  if(!recentBox) return;
+  let protocols = [];
+  try { protocols = loadProtocols(); } catch(e) {}
+  protocols = (protocols || []).slice().sort((a,b)=>{
+    const da=String(a.date||a.inspectionDate||a.createdAt||"");
+    const db=String(b.date||b.inspectionDate||b.createdAt||"");
+    return db.localeCompare(da);
+  }).slice(0,5);
+
+  if(!protocols.length){
+    recentBox.innerHTML='<div class="empty">Noch keine Prüfungen gespeichert.</div>';
+    return;
+  }
+  recentBox.innerHTML=protocols.map(p=>{
+    const eq = equipment.find(x=>x.id===p.equipmentId);
+    const name = eq?.name || p.equipmentName || p.equipmentId || "Arbeitsmittel";
+    const raw = p.date || p.inspectionDate || p.createdAt || "";
+    let date = raw;
+    try { if(raw) date = new Date(raw).toLocaleDateString("de-DE"); } catch(e){}
+    const blockedText = p.releaseStatus==="blocked" ? " · 🚫 gesperrt" : "";
+    return `<div class="list-item"><div><h4>${escapeHtml(String(name))}</h4><div class="meta">${escapeHtml(String(date||"Prüfung"))}${blockedText}</div></div></div>`;
+  }).join("");
+}
+
+function getReleaseStatus(eq){
+  return eq?.releaseStatus || "released";
+}
+
+function releaseBadgeHtml(eq){
+  const status = getReleaseStatus(eq);
+  if(status === "blocked") return '<span class="tag release-blocked">🚫 Gesperrt</span>';
+  if(status === "restricted") return '<span class="tag release-restricted">🟡 Eingeschränkt</span>';
+  return '<span class="tag release-released">🟢 Freigegeben</span>';
+}
+
+function handleReleaseStatusChange(){
+  const status = document.getElementById("releaseStatus")?.value || "released";
+  const noteWrap = document.getElementById("releaseNoteWrap");
+  const help = document.getElementById("releaseStatusHelp");
+  const interval = document.getElementById("nextInspectionInterval");
+  const nextDate = document.getElementById("suggestedNextDate");
+
+  if(noteWrap) noteWrap.classList.toggle("hidden", status === "released");
+
+  if(status === "blocked"){
+    if(help) help.textContent = "Gesperrte Arbeitsmittel erhalten keinen neuen regulären Prüftermin.";
+    if(interval) interval.value = "0";
+    if(nextDate) nextDate.value = "";
+  } else if(status === "restricted"){
+    if(help) help.textContent = "Das Arbeitsmittel bleibt verwendbar, der Hinweis wird im Prüfprotokoll gespeichert.";
+  } else {
+    if(help) help.textContent = "Das Arbeitsmittel ist nach der Prüfung freigegeben.";
+  }
+}
+
+function setReleaseDefaults(defectCount){
+  const select = document.getElementById("releaseStatus");
+  const note = document.getElementById("releaseNote");
+  if(!select) return;
+  select.value = defectCount > 0 ? "restricted" : "released";
+  if(note) note.value = "";
+  handleReleaseStatusChange();
 }
 
 function showEquipmentList(){
@@ -1251,10 +1868,12 @@ function renderEquipmentList(){
   const q = (document.getElementById("searchInput")?.value || "").toLowerCase().trim();
   const type = document.getElementById("typeFilter")?.value || "";
   const location = document.getElementById("locationFilter")?.value || "";
+  const release = document.getElementById("releaseFilter")?.value || "";
 
   const filtered = list.filter(x => {
     const hay = `${x.id} ${x.name} ${x.type} ${x.manufacturer} ${x.location}`.toLowerCase();
-    return (!q || hay.includes(q)) && (!type || x.type === type) && (!location || x.location === location);
+    const r = x.releaseStatus || "released";
+    return (!q || hay.includes(q)) && (!type || x.type === type) && (!location || x.location === location) && (!release || r === release);
   });
 
   document.getElementById("visibleCount").textContent = `${filtered.length} angezeigt`;
@@ -1269,6 +1888,7 @@ function renderEquipmentList(){
       <div>
         <h4>${escapeHtml(x.id)} – ${escapeHtml(x.name)}</h4>
         <div class="meta">${escapeHtml(x.type)} · ${escapeHtml(x.manufacturer || "Hersteller nicht angegeben")} · Standort: ${escapeHtml(x.location)}</div>
+        ${releaseBadgeHtml(x)}
         <span class="tag ${due.className}">${due.text}</span>
       </div>
       <div class="item-actions">
@@ -1282,6 +1902,7 @@ function renderEquipmentList(){
   }).join("");
 }
 function deleteEquipment(id){
+  if(!requireAdmin()) return;
   if(!confirm(`Arbeitsmittel ${id} wirklich löschen?`)) return;
   const list = loadEquipment().filter(x => x.id !== id);
   saveEquipmentList(list);
@@ -1289,6 +1910,7 @@ function deleteEquipment(id){
   renderEquipmentList();
   updateHomeCounts();
 updateStatusOverview();
+updateDashboard();
 }
 
 function dueInfo(dateStr){
@@ -1472,7 +2094,10 @@ function finishInspection(){
   showOnly("summaryScreen");
   clearSignature();
   setTimeout(initSignatureCanvas, 0);
-  setTimeout(updateSuggestedNextDate, 0);
+  setTimeout(() => {
+    updateSuggestedNextDate();
+    setReleaseDefaults(defect);
+  }, 0);
 }
 function saveInspection(){
   if(!lastSummary) return;
@@ -1487,16 +2112,22 @@ function saveInspection(){
   lastSummary.companyName = settings.companyName || "";
   lastSummary.signature = signature;
 
-  const nextDate = document.getElementById("suggestedNextDate")?.value || "";
+  const releaseStatus = document.getElementById("releaseStatus")?.value || "released";
+  const releaseNote = document.getElementById("releaseNote")?.value.trim() || "";
+  lastSummary.releaseStatus = releaseStatus;
+  lastSummary.releaseNote = releaseNote;
+
+  let nextDate = document.getElementById("suggestedNextDate")?.value || "";
+  if(releaseStatus === "blocked") nextDate = "";
   lastSummary.nextInspectionDate = nextDate;
 
-  if(nextDate){
-    const equipment = loadEquipment();
-    const idx = equipment.findIndex(x => x.id === lastSummary.equipmentId);
-    if(idx !== -1){
-      equipment[idx].nextDate = nextDate;
-      saveEquipmentList(equipment);
-    }
+  const equipment = loadEquipment();
+  const idx = equipment.findIndex(x => x.id === lastSummary.equipmentId);
+  if(idx !== -1){
+    equipment[idx].releaseStatus = releaseStatus;
+    equipment[idx].releaseNote = releaseNote;
+    if(nextDate) equipment[idx].nextDate = nextDate;
+    saveEquipmentList(equipment);
   }
 
   const list = JSON.parse(localStorage.getItem("leitercheck_protocols") || "[]");
@@ -1551,7 +2182,8 @@ function showProtocolDetail(index){
       <div class="summary-box"><strong>${escapeHtml(p.location || "")}</strong><span>Standort</span></div>
       <div class="summary-box"><strong class="${p.defect > 0 ? "orange" : "green"}">${p.defect > 0 ? p.defect + " Mängel" : "OK"}</strong><span>Ergebnis</span></div>
     </div>
-    ${p.nextInspectionDate ? `<div class="meta" style="margin-top:12px"><strong>Nächste Prüfung:</strong> ${new Date(p.nextInspectionDate+"T00:00:00").toLocaleDateString("de-DE")}</div>` : ""}
+    ${p.releaseStatus ? `<div class="meta" style="margin-top:12px"><strong>Freigabestatus:</strong> ${p.releaseStatus === "blocked" ? "🚫 Gesperrt" : p.releaseStatus === "restricted" ? "🟡 Eingeschränkt" : "🟢 Freigegeben"}${p.releaseNote ? " · "+escapeHtml(p.releaseNote) : ""}</div>` : ""}
+    ${p.nextInspectionDate ? `<div class="meta" style="margin-top:6px"><strong>Nächste Prüfung:</strong> ${new Date(p.nextInspectionDate+"T00:00:00").toLocaleDateString("de-DE")}</div>` : ""}
 
     <h3 style="margin-top:24px">Prüfpunkte</h3>
     <div class="checklist">${rows || '<div class="empty">Keine Detaildaten vorhanden.</div>'}</div>
@@ -1728,6 +2360,7 @@ function toggleDefectStatus(key, closeIt){
   renderDefects();
   updateHomeCounts();
 updateStatusOverview();
+updateDashboard();
 }
 
 
@@ -1818,6 +2451,11 @@ function buildProtocolPdf(protocol){
   addLine(`Standort: ${protocol.location || ""}`);
   addLine(`Prüfdatum: ${protocol.date || ""}`);
   addLine(`Prüfer: ${protocol.inspector || ""}`);
+  if(protocol.releaseStatus){
+    const label = protocol.releaseStatus === "blocked" ? "Gesperrt" : protocol.releaseStatus === "restricted" ? "Eingeschränkt freigegeben" : "Freigegeben";
+    addLine(`Freigabestatus: ${label}`, 10, true);
+    if(protocol.releaseNote) addLine(`Hinweis: ${protocol.releaseNote}`);
+  }
   if(protocol.nextInspectionDate){
     try{
       const nd = new Date(protocol.nextInspectionDate + "T00:00:00");
@@ -2071,12 +2709,13 @@ function exportExcel(){
     .filter(x => x.state);
 
   const equipmentRows = [
-    excelRow(["Inventarnummer","Typ","Bezeichnung","Hersteller","Standort","Nächste Prüfung","Bemerkungen"], true),
+    excelRow(["Inventarnummer","Typ","Bezeichnung","Hersteller","Standort","Freigabestatus","Nächste Prüfung","Bemerkungen"], true),
     ...equipment
       .slice()
       .sort((a,b)=>a.id.localeCompare(b.id,"de"))
       .map(x => excelRow([
         x.id, x.type, x.name, x.manufacturer || "", x.location,
+        x.releaseStatus === "blocked" ? "Gesperrt" : x.releaseStatus === "restricted" ? "Eingeschränkt" : "Freigegeben",
         x.nextDate ? new Date(x.nextDate+"T00:00:00").toLocaleDateString("de-DE") : "",
         x.notes || ""
       ]))
@@ -2206,7 +2845,8 @@ function buildBackupData(){
       locations: JSON.parse(localStorage.getItem("leitercheck_locations") || "[]"),
       generalSettings: JSON.parse(localStorage.getItem("leitercheck_general_settings") || "{}"),
       protocols: JSON.parse(localStorage.getItem("leitercheck_protocols") || "[]"),
-      defectStatus: JSON.parse(localStorage.getItem("leitercheck_defect_status") || "{}")
+      defectStatus: JSON.parse(localStorage.getItem("leitercheck_defect_status") || "{}"),
+      users: JSON.parse(localStorage.getItem("leitercheck_users") || "[]")
     }
   };
 }
@@ -2247,11 +2887,13 @@ async function restoreBackup(event){
     localStorage.setItem("leitercheck_general_settings", JSON.stringify(d.generalSettings || {}));
     localStorage.setItem("leitercheck_protocols", JSON.stringify(d.protocols));
     localStorage.setItem("leitercheck_defect_status", JSON.stringify(d.defectStatus || {}));
+    localStorage.setItem("leitercheck_users", JSON.stringify(Array.isArray(d.users) ? d.users : []));
 
     alert("Datensicherung wurde erfolgreich wiederhergestellt.");
     input.value="";
     updateHomeCounts();
 updateStatusOverview();
+updateDashboard();
     loadGeneralSettingsIntoForm();
     renderSettingsLocations();
   }catch(err){
@@ -2292,6 +2934,7 @@ loadEquipment();
 loadLocations();
 updateHomeCounts();
 updateStatusOverview();
+updateDashboard();
 </script>
 </body>
 </html>
