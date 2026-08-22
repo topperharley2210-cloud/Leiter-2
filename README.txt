@@ -35,3 +35,18 @@ QR-Sammeldruck:
 - Größen 40x40 mm, 50x30 mm und 60x40 mm
 - Inventarnummer wird auf dem Etikett nicht angezeigt
 - Standort kann optional ein-/ausgeblendet werden
+
+Prüfplaketten/PDF:
+- QR-Etiketten als druckfertigen A4-Bogen ausgeben
+- Prüfplaketten mit nächstem Prüftermin ausgeben
+- Kombinierte QR-/Prüfplaketten möglich
+- Im Browser-Druckdialog kann die Ausgabe als PDF gespeichert werden
+- Inventarnummer wird weiterhin nicht sichtbar aufgedruckt
+
+Prüfstatus V18:
+- Grün: Prüfung länger als 30 Tage gültig
+- Gelb: innerhalb der nächsten 30 Tage fällig
+- Rot: Prüftermin überschritten
+- Grau: kein Prüftermin hinterlegt
+- Statusübersicht auf der Startseite
+- Historienansicht pro Arbeitsmittel

@@ -172,6 +172,21 @@
   </footer>
 </section>
 
+
+<section id="equipmentHistoryScreen" class="hidden">
+  <div class="screen-header">
+    <div class="screen-title"><h2>Prüfstatus & Historie</h2><p id="historySubtitle">Arbeitsmittel</p></div>
+    <button class="back-btn" onclick="showEquipmentList()">← Zur Liste</button>
+  </div>
+  <div class="panel">
+    <div id="historyStatusCard"></div>
+  </div>
+  <div class="panel">
+    <h3>Prüf-Historie</h3>
+    <div id="historyProtocolList" class="list"></div>
+  </div>
+</section>
+
 <section id="equipmentListScreen" class="hidden">
   <div class="screen-header"><div class="screen-title"><h2>Leitern &amp; Tritte</h2><p>Arbeitsmittel suchen und filtern</p></div><button class="back-btn" onclick="goHome()">← Startseite</button></div>
   <div class="panel">
@@ -525,10 +540,11 @@ function loadEquipment(){
 function saveEquipmentList(list){ localStorage.setItem("leitercheck_equipment", JSON.stringify(list)); }
 function showOnly(id){
   if(id !== "scannerScreen") stopScanner();
-  ["homeScreen","privacyScreen","equipmentListScreen","qrBatchScreen","scannerScreen","qrScreen","editEquipmentScreen","addEquipmentScreen","dueScreen","defectScreen","settingsScreen","inspectionScreen","summaryScreen","protocolDetailScreen","protocolScreen"].forEach(x => document.getElementById(x).classList.toggle("hidden", x !== id));
+  ["homeScreen","privacyScreen","equipmentHistoryScreen","equipmentListScreen","qrBatchScreen","scannerScreen","qrScreen","editEquipmentScreen","addEquipmentScreen","dueScreen","defectScreen","settingsScreen","inspectionScreen","summaryScreen","protocolDetailScreen","protocolScreen"].forEach(x => document.getElementById(x).classList.toggle("hidden", x !== id));
   window.scrollTo({top:0,behavior:"smooth"});
 }
-function goHome(){ updateHomeCounts(); showOnly("homeScreen"); }
+function goHome(){ updateHomeCounts();
+updateStatusOverview(); showOnly("homeScreen"); }
 
 
 
@@ -624,6 +640,7 @@ function renameLocation(index){
   saveEquipmentList(equipment);
   renderSettingsLocations();
   updateHomeCounts();
+updateStatusOverview();
 }
 function deleteLocation(index){
   const locations = loadLocations();
@@ -673,6 +690,90 @@ function saveEquipment(){
 
 
 
+
+
+function parseLocalDate(value){
+  if(!value) return null;
+  const d = new Date(value + "T00:00:00");
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function equipmentStatus(eq){
+  const d = parseLocalDate(eq.nextDate);
+  if(!d) return {key:"none", label:"Kein Prüftermin", icon:"⚪", days:null};
+  const today = new Date(); today.setHours(0,0,0,0);
+  const diff = Math.ceil((d - today) / 86400000);
+  if(diff < 0) return {key:"overdue", label:"Überfällig", icon:"🔴", days:diff};
+  if(diff <= 30) return {key:"due", label:"Bald fällig", icon:"🟡", days:diff};
+  return {key:"valid", label:"Gültig", icon:"🟢", days:diff};
+}
+
+function equipmentStatusBadge(eq){
+  const s = equipmentStatus(eq);
+  return `<span title="${escapeAttr(s.label)}" style="font-size:.9em">${s.icon}</span>`;
+}
+
+function updateStatusOverview(){
+  const counts = {valid:0,due:0,overdue:0,none:0};
+  loadEquipment().forEach(eq => counts[equipmentStatus(eq).key]++);
+  const g=document.getElementById("statusGreen"), y=document.getElementById("statusYellow"),
+        r=document.getElementById("statusRed"), n=document.getElementById("statusGray");
+  if(g) g.textContent=`🟢 ${counts.valid} gültig`;
+  if(y) y.textContent=`🟡 ${counts.due} bald fällig`;
+  if(r) r.textContent=`🔴 ${counts.overdue} überfällig`;
+  if(n) n.textContent=`⚪ ${counts.none} ohne Termin`;
+}
+
+function protocolsForEquipment(id){
+  return loadProtocols().filter(p => {
+    const pid = String(p.equipmentId || p.id || p.inventoryId || "");
+    return pid === id;
+  }).sort((a,b) => String(b.date || b.inspectionDate || "").localeCompare(String(a.date || a.inspectionDate || "")));
+}
+
+function showEquipmentHistory(id){
+  const eq = loadEquipment().find(x => x.id === id);
+  if(!eq) return;
+  const s = equipmentStatus(eq);
+  document.getElementById("historySubtitle").textContent = `${eq.name} · ${eq.location || "ohne Standort"}`;
+
+  const dateText = eq.nextDate ? new Date(eq.nextDate+"T00:00:00").toLocaleDateString("de-DE") : "Nicht festgelegt";
+  let detail = "";
+  if(s.key === "due") detail = s.days === 0 ? "Heute fällig" : `In ${s.days} Tagen fällig`;
+  if(s.key === "overdue") detail = `Seit ${Math.abs(s.days)} Tagen überfällig`;
+  if(s.key === "valid") detail = `Noch ${s.days} Tage gültig`;
+
+  document.getElementById("historyStatusCard").innerHTML = `
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="font-size:2.5rem">${s.icon}</div>
+      <div>
+        <h3 style="margin:0">${escapeHtml(s.label)}</h3>
+        <div class="meta">Nächste Prüfung: ${escapeHtml(dateText)}</div>
+        ${detail ? `<div class="meta">${escapeHtml(detail)}</div>` : ""}
+      </div>
+    </div>`;
+
+  const protocols = protocolsForEquipment(id);
+  const box = document.getElementById("historyProtocolList");
+  if(!protocols.length){
+    box.innerHTML = '<div class="empty">Für dieses Arbeitsmittel sind noch keine gespeicherten Prüfungen vorhanden.</div>';
+  } else {
+    box.innerHTML = protocols.map((p,i) => {
+      const rawDate = p.date || p.inspectionDate || "";
+      let date = rawDate;
+      try { if(rawDate) date = new Date(rawDate).toLocaleDateString("de-DE"); } catch(e){}
+      const result = p.result || p.status || p.overallResult || "Prüfung gespeichert";
+      const inspector = p.inspector || p.examiner || p.pruefer || "";
+      return `<div class="list-item">
+        <div>
+          <h4>${escapeHtml(date || "Prüfung")} · ${escapeHtml(String(result))}</h4>
+          <div class="meta">${inspector ? "Prüfer: "+escapeHtml(String(inspector)) : "Gespeichertes Prüfprotokoll"}</div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+  showOnly("equipmentHistoryScreen");
+}
 
 function showQrBatchPrint(){
   renderQrBatchList();
@@ -1111,6 +1212,7 @@ function saveEditedEquipment(){
   alert("Arbeitsmittel wurde aktualisiert.");
   showEquipmentList();
   updateHomeCounts();
+updateStatusOverview();
 }
 
 function showEquipmentList(){
@@ -1151,6 +1253,7 @@ function renderEquipmentList(){
       </div>
       <div class="item-actions">
         <button class="primary-btn" onclick="editEquipment('${jsSafe(x.id)}')">Bearbeiten</button>
+        <button class="secondary-btn" onclick="showEquipmentHistory('${jsSafe(x.id)}')">Historie</button>
         <button class="secondary-btn" onclick="showQrCode('${jsSafe(x.id)}')">QR-Code</button>
         <button class="secondary-btn" onclick="startInspectionFor('${jsSafe(x.id)}')">Prüfen</button>
         <button class="danger-btn" onclick="deleteEquipment('${jsSafe(x.id)}')">Löschen</button>
@@ -1165,6 +1268,7 @@ function deleteEquipment(id){
   populateLocationFilter();
   renderEquipmentList();
   updateHomeCounts();
+updateStatusOverview();
 }
 
 function dueInfo(dateStr){
@@ -1556,6 +1660,7 @@ function toggleDefectStatus(key, closeIt){
   saveDefectStatusMap(map);
   renderDefects();
   updateHomeCounts();
+updateStatusOverview();
 }
 
 
@@ -2073,6 +2178,7 @@ async function restoreBackup(event){
     alert("Datensicherung wurde erfolgreich wiederhergestellt.");
     input.value="";
     updateHomeCounts();
+updateStatusOverview();
     loadGeneralSettingsIntoForm();
     renderSettingsLocations();
   }catch(err){
@@ -2112,6 +2218,7 @@ renderChecklist();
 loadEquipment();
 loadLocations();
 updateHomeCounts();
+updateStatusOverview();
 </script>
 </body>
 </html>
