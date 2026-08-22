@@ -180,13 +180,60 @@
       <select id="typeFilter" onchange="renderEquipmentList()"><option value="">Alle Typen</option><option>Stehleiter</option><option>Anlegeleiter</option><option>Mehrzweckleiter</option><option>Tritt</option></select>
       <select id="locationFilter" onchange="renderEquipmentList()"><option value="">Alle Standorte</option></select>
     </div>
-    <div class="statbar"><span class="pill" id="visibleCount">0 angezeigt</span><span class="pill" id="allCount">0 gesamt</span></div>
+    <div class="statbar">
+      <span class="pill" id="visibleCount">0 angezeigt</span>
+      <span class="pill" id="allCount">0 gesamt</span>
+      <button class="secondary-btn" onclick="showQrBatchPrint()" style="margin-left:auto">🖨️ QR-Etiketten drucken</button>
+    </div>
     <div id="equipmentList" class="list"></div>
   </div>
 </section>
 
 
 
+
+
+<section id="qrBatchScreen" class="hidden">
+  <div class="screen-header">
+    <div class="screen-title"><h2>QR-Etiketten drucken</h2><p>Mehrere Arbeitsmittel auf einem Etikettenbogen ausgeben</p></div>
+    <button class="back-btn" onclick="showEquipmentList()">← Zur Liste</button>
+  </div>
+
+  <div class="panel">
+    <h3>Druckeinstellungen</h3>
+    <div class="form-grid">
+      <div class="field">
+        <label for="qrLabelSize">Etikettengröße</label>
+        <select id="qrLabelSize">
+          <option value="40x40">40 × 40 mm</option>
+          <option value="50x30">50 × 30 mm</option>
+          <option value="60x40" selected>60 × 40 mm</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="qrShowLocation">Standort anzeigen</label>
+        <select id="qrShowLocation">
+          <option value="yes" selected>Ja</option>
+          <option value="no">Nein</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Arbeitsmittel auswählen</label>
+      <div class="actions" style="justify-content:flex-start;margin-top:0">
+        <button class="secondary-btn" onclick="selectAllQrLabels(true)">Alle auswählen</button>
+        <button class="secondary-btn" onclick="selectAllQrLabels(false)">Auswahl aufheben</button>
+      </div>
+    </div>
+
+    <div id="qrBatchList" class="list"></div>
+
+    <div class="actions">
+      <button class="primary-btn" onclick="printSelectedQrLabels()">🖨️ Ausgewählte Etiketten drucken</button>
+    </div>
+  </div>
+</section>
 
 <section id="scannerScreen" class="hidden">
   <div class="screen-header">
@@ -353,6 +400,18 @@
   </div>
 
 
+
+  <div class="panel">
+    <h3>Datensicherung</h3>
+    <p class="meta">Alle LeiterCheck-Daten können als Sicherungsdatei gespeichert und später wieder eingelesen werden.</p>
+    <div class="actions">
+      <button class="secondary-btn" onclick="downloadBackup()">💾 Backup herunterladen</button>
+      <button class="primary-btn" onclick="document.getElementById('backupFileInput').click()">♻️ Backup wiederherstellen</button>
+      <input id="backupFileInput" type="file" accept=".json,application/json" class="hidden" onchange="restoreBackup(event)">
+    </div>
+    <p class="meta" style="margin-top:10px">Beim Wiederherstellen werden die aktuell auf diesem Gerät gespeicherten LeiterCheck-Daten durch die Daten aus der Sicherung ersetzt.</p>
+  </div>
+
   <div class="panel">
     <h3>App installieren</h3>
     <p class="meta">LeiterCheck kann als Web-App auf dem Homescreen installiert werden.</p>
@@ -466,7 +525,7 @@ function loadEquipment(){
 function saveEquipmentList(list){ localStorage.setItem("leitercheck_equipment", JSON.stringify(list)); }
 function showOnly(id){
   if(id !== "scannerScreen") stopScanner();
-  ["homeScreen","privacyScreen","equipmentListScreen","scannerScreen","qrScreen","editEquipmentScreen","addEquipmentScreen","dueScreen","defectScreen","settingsScreen","inspectionScreen","summaryScreen","protocolDetailScreen","protocolScreen"].forEach(x => document.getElementById(x).classList.toggle("hidden", x !== id));
+  ["homeScreen","privacyScreen","equipmentListScreen","qrBatchScreen","scannerScreen","qrScreen","editEquipmentScreen","addEquipmentScreen","dueScreen","defectScreen","settingsScreen","inspectionScreen","summaryScreen","protocolDetailScreen","protocolScreen"].forEach(x => document.getElementById(x).classList.toggle("hidden", x !== id));
   window.scrollTo({top:0,behavior:"smooth"});
 }
 function goHome(){ updateHomeCounts(); showOnly("homeScreen"); }
@@ -613,6 +672,117 @@ function saveEquipment(){
 
 
 
+
+
+function showQrBatchPrint(){
+  renderQrBatchList();
+  showOnly("qrBatchScreen");
+}
+
+function renderQrBatchList(){
+  const equipment = loadEquipment().slice().sort((a,b)=>a.name.localeCompare(b.name,"de"));
+  const box = document.getElementById("qrBatchList");
+  if(!equipment.length){
+    box.innerHTML = '<div class="empty">Keine Arbeitsmittel vorhanden.</div>';
+    return;
+  }
+  box.innerHTML = equipment.map(eq => `
+    <label class="list-item" style="cursor:pointer">
+      <div style="display:flex;align-items:center;gap:12px">
+        <input type="checkbox" class="qr-batch-check" value="${escapeAttr(eq.id)}" checked style="width:22px;height:22px">
+        <div>
+          <h4>${escapeHtml(eq.name)}</h4>
+          <div class="meta">${escapeHtml(eq.type)} · Standort: ${escapeHtml(eq.location)}</div>
+        </div>
+      </div>
+    </label>
+  `).join("");
+}
+
+function selectAllQrLabels(checked){
+  document.querySelectorAll(".qr-batch-check").forEach(cb => cb.checked = checked);
+}
+
+function selectedQrEquipment(){
+  const ids = Array.from(document.querySelectorAll(".qr-batch-check:checked")).map(cb => cb.value);
+  const all = loadEquipment();
+  return ids.map(id => all.find(x => x.id === id)).filter(Boolean);
+}
+
+function qrLabelDimensions(){
+  const val = document.getElementById("qrLabelSize").value;
+  if(val === "40x40") return {w:40,h:40,qr:25};
+  if(val === "50x30") return {w:50,h:30,qr:19};
+  return {w:60,h:40,qr:25};
+}
+
+function printSelectedQrLabels(){
+  const items = selectedQrEquipment();
+  if(!items.length){
+    alert("Bitte mindestens ein Arbeitsmittel auswählen.");
+    return;
+  }
+
+  const dims = qrLabelDimensions();
+  const showLocation = document.getElementById("qrShowLocation").value === "yes";
+  const company = getGeneralSettings().companyName || "LeiterCheck";
+
+  const labels = items.map(eq => {
+    const svg = matrixToSvg(makeSimpleQrMatrix(qrPayloadForEquipment(eq.id)), 10, 4)
+      .replace('width="290" height="290"', `width="${dims.qr}mm" height="${dims.qr}mm"`);
+    return `<div class="label">
+      <div class="company">${escapeHtml(company)}</div>
+      <div class="qr">${svg}</div>
+      <div class="name">${escapeHtml(eq.name)}</div>
+      ${showLocation ? `<div class="location">${escapeHtml(eq.location)}</div>` : ""}
+    </div>`;
+  }).join("");
+
+  const w = window.open("","_blank","width=900,height=800");
+  if(!w){
+    alert("Das Druckfenster wurde vom Browser blockiert.");
+    return;
+  }
+
+  w.document.write(`<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>LeiterCheck QR-Etiketten</title>
+<style>
+  @page { size:A4; margin:8mm; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:Arial,sans-serif; }
+  .sheet { display:flex; flex-wrap:wrap; align-content:flex-start; gap:3mm; }
+  .label {
+    width:${dims.w}mm;
+    height:${dims.h}mm;
+    border:0.3mm solid #bbb;
+    padding:2mm;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    overflow:hidden;
+    page-break-inside:avoid;
+  }
+  .company { font-size:8pt; font-weight:bold; margin-bottom:1mm; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+  .qr { line-height:0; }
+  .name { font-size:8pt; font-weight:bold; margin-top:1mm; line-height:1.1; }
+  .location { font-size:7pt; margin-top:.7mm; line-height:1.1; }
+  @media print {
+    .label { border:0.2mm solid #aaa; }
+  }
+</style>
+</head>
+<body>
+<div class="sheet">${labels}</div>
+<script>window.onload=()=>setTimeout(()=>window.print(),250);<\/script>
+</body>
+</html>`);
+  w.document.close();
+}
 
 let scannerStream = null;
 let scannerTimer = null;
@@ -864,7 +1034,7 @@ function printQrLabel(){
   if(!w){alert("Das Druckfenster wurde vom Browser blockiert.");return;}
   w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>QR ${escapeHtml(eq.id)}</title>
   <style>body{font-family:Arial,sans-serif;text-align:center;padding:30px}h1{font-size:20px;margin:0 0 8px}h2{font-size:18px;margin:8px 0}.meta{font-size:13px;margin:5px 0}.label{display:inline-block;border:1px solid #aaa;padding:18px;width:340px}@media print{body{padding:0}.label{border:1px solid #000}}</style>
-  </head><body><div class="label"><h1>${escapeHtml(company)}</h1><h2>${escapeHtml(eq.id)}</h2>${currentQrSvg}<div class="meta">${escapeHtml(eq.name)}</div><div class="meta">Standort: ${escapeHtml(eq.location)}</div><div class="meta">Mit LeiterCheck scannen</div></div>
+  </head><body><div class="label"><h1>${escapeHtml(company)}</h1>${currentQrSvg}<div class="meta" style="font-weight:bold;font-size:15px">${escapeHtml(eq.name)}</div><div class="meta">Standort: ${escapeHtml(eq.location)}</div><div class="meta">Mit LeiterCheck scannen</div></div>
   <script>window.onload=()=>{window.print();}<\/script></body></html>`);
   w.document.close();
 }
@@ -1846,6 +2016,70 @@ function escapeHtml(s=""){ return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;",
 function escapeAttr(s=""){ return escapeHtml(s); }
 function jsSafe(s=""){ return String(s).replace(/\\/g,"\\\\").replace(/'/g,"\\'"); }
 
+
+
+function buildBackupData(){
+  return {
+    app:"LeiterCheck",
+    backupVersion:1,
+    createdAt:new Date().toISOString(),
+    data:{
+      equipment: JSON.parse(localStorage.getItem("leitercheck_equipment") || "[]"),
+      locations: JSON.parse(localStorage.getItem("leitercheck_locations") || "[]"),
+      generalSettings: JSON.parse(localStorage.getItem("leitercheck_general_settings") || "{}"),
+      protocols: JSON.parse(localStorage.getItem("leitercheck_protocols") || "[]"),
+      defectStatus: JSON.parse(localStorage.getItem("leitercheck_defect_status") || "{}")
+    }
+  };
+}
+
+function downloadBackup(){
+  const backup = buildBackupData();
+  const blob = new Blob([JSON.stringify(backup,null,2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `LeiterCheck_Backup_${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+
+async function restoreBackup(event){
+  const input = event.target;
+  const file = input.files && input.files[0];
+  if(!file) return;
+  try{
+    const text = await file.text();
+    const backup = JSON.parse(text);
+    if(!backup || backup.app !== "LeiterCheck" || !backup.data){
+      throw new Error("Ungültige LeiterCheck-Sicherungsdatei.");
+    }
+    const d = backup.data;
+    if(!Array.isArray(d.equipment) || !Array.isArray(d.locations) || !Array.isArray(d.protocols)){
+      throw new Error("Die Sicherungsdatei ist unvollständig oder beschädigt.");
+    }
+    const ok = confirm("Backup wirklich wiederherstellen?\n\nDie aktuell auf diesem Gerät gespeicherten LeiterCheck-Daten werden ersetzt.");
+    if(!ok){ input.value=""; return; }
+
+    localStorage.setItem("leitercheck_equipment", JSON.stringify(d.equipment));
+    localStorage.setItem("leitercheck_locations", JSON.stringify(d.locations));
+    localStorage.setItem("leitercheck_general_settings", JSON.stringify(d.generalSettings || {}));
+    localStorage.setItem("leitercheck_protocols", JSON.stringify(d.protocols));
+    localStorage.setItem("leitercheck_defect_status", JSON.stringify(d.defectStatus || {}));
+
+    alert("Datensicherung wurde erfolgreich wiederhergestellt.");
+    input.value="";
+    updateHomeCounts();
+    loadGeneralSettingsIntoForm();
+    renderSettingsLocations();
+  }catch(err){
+    alert("Backup konnte nicht wiederhergestellt werden: " + (err?.message || "Unbekannter Fehler"));
+    input.value="";
+  }
+}
 
 let deferredPwaInstall = null;
 

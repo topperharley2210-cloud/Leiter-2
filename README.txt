@@ -25,3 +25,13 @@ Die Daten werden weiterhin lokal im Browser/auf dem Gerät gespeichert.
 
 Copyright-Hinweis in der App: © 2026 T. Geib · LeiterCheck
 Datenschutzhinweis ist über die Startseite erreichbar.
+
+Datensicherung:
+- Backup als JSON-Datei herunterladen
+- Backup auf demselben oder einem anderen Gerät wiederherstellen
+
+QR-Sammeldruck:
+- Mehrere QR-Etiketten gleichzeitig auswählen und drucken
+- Größen 40x40 mm, 50x30 mm und 60x40 mm
+- Inventarnummer wird auf dem Etikett nicht angezeigt
+- Standort kann optional ein-/ausgeblendet werden
