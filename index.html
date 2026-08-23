@@ -2921,6 +2921,14 @@ installCloudLocalStorageWatcher();
     await cloudPullState(false);
   }
 }, 1500);
+  setInterval(async () => {
+  const s = cloudSession();
+  const org = cloudOrg();
+
+  if (s.access_token && org.org_id) {
+    await cloudPullState(false);
+  }
+}, 30000);
 renderChecklist();
 loadEquipment();
 loadLocations();
