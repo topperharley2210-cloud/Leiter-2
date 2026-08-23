@@ -1650,10 +1650,20 @@ function installCloudLocalStorageWatcher(){
   window.__leitercheckCloudWatcher=true;
   const original=Storage.prototype.setItem;
   Storage.prototype.setItem=function(key,value){
-    original.call(this,key,value);
-    if(this===localStorage && CLOUD_DATA_KEYS.includes(key)) scheduleCloudAutoSync();
-  };
-}
+  original.call(this,key,value);
+
+  if(this===localStorage && CLOUD_DATA_KEYS.includes(key)){
+    if(!cloudApplying){
+      original.call(
+        this,
+        "leitercheck_last_local_change",
+        new Date().toISOString()
+      );
+    }
+    scheduleCloudAutoSync();
+  }
+};
+
 
 function currentCloudRole(){
   const s=cloudSession(), org=cloudOrg();
