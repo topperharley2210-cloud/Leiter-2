@@ -1588,12 +1588,39 @@ async function cloudPushState(showMessage=true){
       if(showMessage) alert("Bitte zuerst anmelden und einem Betrieb beitreten.");
       return;
     }
+    const remoteRows=await cloudRequest(
+  `/rest/v1/leitercheck_state?org_id=eq.${encodeURIComponent(org.org_id)}&select=updated_at`
+);
+
+const remoteUpdated=
+  Array.isArray(remoteRows) && remoteRows[0]?.updated_at
+    ? new Date(remoteRows[0].updated_at).getTime()
+    : 0;
+
+const lastKnownRaw=localStorage.getItem("leitercheck_last_cloud_update");
+const lastKnown=lastKnownRaw ? new Date(lastKnownRaw).getTime() : 0;
+
+if(remoteUpdated && lastKnown && remoteUpdated > lastKnown){
+  await cloudPullState(false);
+  if(showMessage) alert("Neuere Cloud-Daten wurden zuerst geladen.");
+  return;
+}
     const state=buildCloudState();
     await cloudRequest("/rest/v1/leitercheck_state?on_conflict=org_id",{
       method:"POST",
       headers:{"Prefer":"resolution=merge-duplicates,return=minimal"},
       body:{org_id:org.org_id,data:state,updated_by:s.user.id}
     });
+    const savedRows=await cloudRequest(
+  `/rest/v1/leitercheck_state?org_id=eq.${encodeURIComponent(org.org_id)}&select=updated_at`
+);
+
+if(Array.isArray(savedRows) && savedRows[0]?.updated_at){
+  localStorage.setItem(
+    "leitercheck_last_cloud_update",
+    savedRows[0].updated_at
+  );
+}
     const el=document.getElementById("cloudSyncStatus");
     if(el) el.textContent="Zuletzt hochgeladen: "+new Date().toLocaleString("de-DE");
     if(showMessage) alert("Daten wurden in die Cloud übertragen.");
