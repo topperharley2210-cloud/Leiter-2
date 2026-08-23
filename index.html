@@ -156,26 +156,7 @@
   </div>
 
   <div class="panel">
-    <h3>1. Cloud-Verbindung</h3>
-    <p class="meta">Einmalig die Projekt-URL und den öffentlichen Anon-Key deines Supabase-Projekts eintragen. Der Service-Role-Key gehört niemals in die App.</p>
-    <div class="form-grid">
-      <div class="field">
-        <label for="cloudUrl">Supabase Projekt-URL</label>
-        <input id="cloudUrl" placeholder="https://xxxx.supabase.co">
-      </div>
-      <div class="field">
-        <label for="cloudAnonKey">Anon / Publishable Key</label>
-        <input id="cloudAnonKey" type="password" placeholder="Öffentlicher Browser-Key">
-      </div>
-    </div>
-    <div class="actions" style="justify-content:flex-start">
-      <button class="primary-btn" onclick="saveCloudConfig()">Cloud-Verbindung speichern</button>
-      <button class="secondary-btn" onclick="clearCloudConfig()">Verbindung entfernen</button>
-    </div>
-  </div>
-
-  <div class="panel">
-    <h3>2. Benutzerkonto</h3>
+    <h3>Benutzerkonto</h3>
     <div id="cloudLoggedOut">
       <div class="form-grid">
         <div class="field"><label for="cloudEmail">E-Mail</label><input id="cloudEmail" type="email" autocomplete="username"></div>
@@ -1396,9 +1377,14 @@ const CLOUD_DATA_KEYS = [
 let cloudApplying = false;
 let cloudSyncTimer = null;
 
+const LEITERCHECK_SUPABASE_URL = "https://vbllaycurbahieqcukwp.supabase.co";
+const LEITERCHECK_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_5-Dia-qVeLb8CGrQGpMXEA_SS721WzH";
+
 function cloudConfig(){
-  try { return JSON.parse(localStorage.getItem("leitercheck_cloud_config") || "{}"); }
-  catch(e){ return {}; }
+  return {
+    url: LEITERCHECK_SUPABASE_URL,
+    anonKey: LEITERCHECK_SUPABASE_PUBLISHABLE_KEY
+  };
 }
 function cloudSession(){
   try { return JSON.parse(localStorage.getItem("leitercheck_cloud_session") || "{}"); }
@@ -1692,9 +1678,6 @@ function showCloud(){
 
 async function renderCloudScreen(){
   const cfg=cloudConfig(), s=cloudSession(), org=cloudOrg();
-  const url=document.getElementById("cloudUrl"), key=document.getElementById("cloudAnonKey");
-  if(url) url.value=cfg.url||"";
-  if(key) key.value=cfg.anonKey||"";
 
   const logged=Boolean(s.access_token);
   document.getElementById("cloudLoggedOut")?.classList.toggle("hidden",logged);
