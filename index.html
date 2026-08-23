@@ -10,7 +10,6 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="icon-192.svg" />
   <title>LeiterCheck</title>
-  <script src="config.js"></script>
   <style>
     :root{
       --bg:#f5f7fb; --card:#fff; --text:#132238; --muted:#6b778a;
@@ -142,7 +141,7 @@
   <div class="panel">
     <h3>Datenschutzhinweis</h3>
     <p>LeiterCheck speichert die in der App erfassten Daten derzeit lokal im Browser bzw. auf dem verwendeten Gerät. Dazu können insbesondere Angaben zu Leitern und Tritten, Standorten, Prüfern, Prüfprotokollen, Mängeln, Firmenname und digitale Unterschriften gehören.</p>
-    <p>In der aktuellen Version werden diese Daten nicht automatisch an einen externen Server übertragen. Beim Exportieren, Herunterladen oder Teilen von Prüfprotokollen und Dateien entscheidet der Benutzer selbst über die weitere Übermittlung.</p>
+    <p>Bei aktivierter Cloud-Anmeldung werden LeiterCheck-Daten über das eingerichtete Supabase-Projekt synchronisiert, damit derselbe Datenbestand auf mehreren Geräten genutzt werden kann. Exporte, Downloads und geteilte Prüfprotokolle werden zusätzlich nur durch eine Aktion des Benutzers ausgelöst.</p>
     <p>Für die QR-Code-Scannerfunktion kann die App nach Zustimmung auf die Kamera des Geräts zugreifen. Der Kamerazugriff dient ausschließlich dem Erfassen von QR-Codes innerhalb der App.</p>
     <p><strong>Wichtig:</strong> Werden später Cloud-Speicherung, Benutzerkonten, E-Mail-Versand, Synchronisierung oder andere externe Dienste ergänzt, muss dieser Datenschutzhinweis entsprechend erweitert und an die tatsächlich eingesetzten Dienste angepasst werden.</p>
     <p>Verantwortlich für die in der App eingegebenen und verarbeiteten Daten ist grundsätzlich der jeweilige Betreiber der eingesetzten LeiterCheck-Installation.</p>
@@ -229,6 +228,7 @@
 
     <button class="tile primary" onclick="showInspection()"><div class="icon">🔍</div><h2>Prüfung starten</h2><p>Neue Prüfung durchführen</p></button>
     <button class="tile" onclick="showScanner()"><div class="icon">📷</div><h2>QR-Code scannen</h2><p>Arbeitsmittel direkt öffnen</p></button>
+    <button class="tile" onclick="showOnly('printCenterScreen')"><div class="icon">🖨️</div><h2>QR & Prüfplaketten</h2><p>QR-Codes, Prüfplaketten und PDF-Ausgabe</p></button>
     <button class="tile" onclick="showEquipmentList()"><div class="icon">🪜</div><h2>Leitern &amp; Tritte</h2><div class="count"><span class="big blue" id="equipmentCount">0</span> erfasst</div></button>
     <button class="tile" onclick="showAddEquipment()"><div class="icon green">＋</div><h2>Neu anlegen</h2><p>Leiter oder Tritt hinzufügen</p></button>
     <button class="tile" onclick="showDefects()"><div class="icon orange">⚠️</div><h2>Mängel</h2><div class="count"><span class="big orange" id="defectCount">0</span> offen</div></button>
@@ -277,7 +277,7 @@
     <div class="statbar">
       <span class="pill" id="visibleCount">0 angezeigt</span>
       <span class="pill" id="allCount">0 gesamt</span>
-      <button class="secondary-btn" onclick="showQrBatchPrint()" style="margin-left:auto">🖨️ QR-Etiketten drucken</button>
+      <button class="secondary-btn" onclick="showOnly('printCenterScreen')" style="margin-left:auto">🖨️ QR & Prüfplaketten</button>
     </div>
     <div id="equipmentList" class="list"></div>
   </div>
@@ -286,6 +286,51 @@
 
 
 
+
+<section id="printCenterScreen" class="hidden">
+  <div class="screen-header">
+    <div class="screen-title"><h2>QR & Prüfplaketten</h2><p>Etiketten und Prüfplaketten für Arbeitsmittel drucken</p></div>
+    <button class="back-btn" onclick="goHome()">← Startseite</button>
+  </div>
+  <div class="panel">
+    <h3>Ausgabe auswählen</h3>
+    <div class="actions" style="justify-content:flex-start">
+      <button class="primary-btn" onclick="showQrBatchPrint()">▦ QR-Etiketten</button>
+      <button class="secondary-btn" onclick="showInspectionLabelPrint()">✓ Prüfplaketten</button>
+      <button class="secondary-btn" onclick="showCombinedLabelPrint()">▦✓ QR + Prüfplakette</button>
+    </div>
+    <p class="meta" style="margin-top:12px">Im Druckdialog kann die Ausgabe auch als PDF gespeichert werden. Die Inventarnummer wird auf den Etiketten nicht ausgegeben.</p>
+  </div>
+</section>
+
+<section id="inspectionLabelScreen" class="hidden">
+  <div class="screen-header">
+    <div class="screen-title"><h2>Prüfplaketten drucken</h2><p>Nächsten Prüftermin als Plakette ausgeben</p></div>
+    <button class="back-btn" onclick="showOnly('printCenterScreen')">← Zurück</button>
+  </div>
+  <div class="panel">
+    <div class="form-grid">
+      <div class="field"><label for="inspectionLabelSize">Plakettengröße</label><select id="inspectionLabelSize"><option value="40x40">40 × 40 mm</option><option value="50x30">50 × 30 mm</option><option value="60x40" selected>60 × 40 mm</option></select></div>
+      <div class="field"><label for="inspectionShowLocation">Standort anzeigen</label><select id="inspectionShowLocation"><option value="yes" selected>Ja</option><option value="no">Nein</option></select></div>
+    </div>
+    <div class="actions" style="justify-content:flex-start"><button class="secondary-btn" onclick="selectAllInspectionLabels(true)">Alle auswählen</button><button class="secondary-btn" onclick="selectAllInspectionLabels(false)">Auswahl aufheben</button></div>
+    <div id="inspectionLabelList" class="list" style="margin-top:14px"></div>
+    <div class="actions"><button class="primary-btn" onclick="printInspectionLabels()">🖨️ Prüfplaketten drucken / PDF</button></div>
+  </div>
+</section>
+
+<section id="combinedLabelScreen" class="hidden">
+  <div class="screen-header">
+    <div class="screen-title"><h2>QR + Prüfplakette</h2><p>QR-Code und nächsten Prüftermin gemeinsam ausgeben</p></div>
+    <button class="back-btn" onclick="showOnly('printCenterScreen')">← Zurück</button>
+  </div>
+  <div class="panel">
+    <div class="field"><label for="combinedShowLocation">Standort anzeigen</label><select id="combinedShowLocation"><option value="yes" selected>Ja</option><option value="no">Nein</option></select></div>
+    <div class="actions" style="justify-content:flex-start"><button class="secondary-btn" onclick="selectAllCombinedLabels(true)">Alle auswählen</button><button class="secondary-btn" onclick="selectAllCombinedLabels(false)">Auswahl aufheben</button></div>
+    <div id="combinedLabelList" class="list" style="margin-top:14px"></div>
+    <div class="actions"><button class="primary-btn" onclick="printCombinedLabels()">🖨️ Kombiniert drucken / PDF</button></div>
+  </div>
+</section>
 
 <section id="qrBatchScreen" class="hidden">
   <div class="screen-header">
@@ -681,7 +726,7 @@ function loadEquipment(){
 function saveEquipmentList(list){ localStorage.setItem("leitercheck_equipment", JSON.stringify(list)); }
 function showOnly(id){
   if(id !== "scannerScreen") stopScanner();
-  ["homeScreen","cloudScreen","privacyScreen","equipmentHistoryScreen","equipmentListScreen","qrBatchScreen","scannerScreen","qrScreen","editEquipmentScreen","addEquipmentScreen","dueScreen","defectScreen","settingsScreen","inspectionScreen","summaryScreen","protocolDetailScreen","protocolScreen"].forEach(x => document.getElementById(x).classList.toggle("hidden", x !== id));
+  ["homeScreen","cloudScreen","privacyScreen","equipmentHistoryScreen","equipmentListScreen","printCenterScreen","inspectionLabelScreen","combinedLabelScreen","qrBatchScreen","scannerScreen","qrScreen","editEquipmentScreen","addEquipmentScreen","dueScreen","defectScreen","settingsScreen","inspectionScreen","summaryScreen","protocolDetailScreen","protocolScreen"].forEach(x => document.getElementById(x).classList.toggle("hidden", x !== id));
   window.scrollTo({top:0,behavior:"smooth"});
 }
 function goHome(){ updateHomeCounts();
@@ -919,6 +964,53 @@ function showEquipmentHistory(id){
     }).join("");
   }
   showOnly("equipmentHistoryScreen");
+}
+
+function formatInspectionMonth(dateStr){
+  if(!dateStr) return {month:"--", year:"----", full:"Kein Termin"};
+  const d=new Date(dateStr+"T00:00:00");
+  if(Number.isNaN(d.getTime())) return {month:"--", year:"----", full:"Kein Termin"};
+  return {month:String(d.getMonth()+1).padStart(2,"0"), year:String(d.getFullYear()), full:d.toLocaleDateString("de-DE")};
+}
+
+function renderPrintSelectionList(targetId, checkboxClass){
+  const equipment=loadEquipment().slice().sort((a,b)=>a.name.localeCompare(b.name,"de"));
+  const box=document.getElementById(targetId);
+  if(!box) return;
+  if(!equipment.length){ box.innerHTML='<div class="empty">Keine Arbeitsmittel vorhanden.</div>'; return; }
+  box.innerHTML=equipment.map(eq=>{
+    const due=formatInspectionMonth(eq.nextDate);
+    return `<label class="list-item" style="cursor:pointer"><div style="display:flex;align-items:center;gap:12px"><input type="checkbox" class="${checkboxClass}" value="${escapeAttr(eq.id)}" checked style="width:22px;height:22px"><div><h4>${escapeHtml(eq.name)}</h4><div class="meta">${escapeHtml(eq.type)} · ${escapeHtml(eq.location)} · nächste Prüfung: ${escapeHtml(due.full)}</div></div></div></label>`;
+  }).join("");
+}
+
+function showInspectionLabelPrint(){ renderPrintSelectionList("inspectionLabelList","inspection-label-check"); showOnly("inspectionLabelScreen"); }
+function showCombinedLabelPrint(){ renderPrintSelectionList("combinedLabelList","combined-label-check"); showOnly("combinedLabelScreen"); }
+function selectAllInspectionLabels(v){ document.querySelectorAll(".inspection-label-check").forEach(x=>x.checked=v); }
+function selectAllCombinedLabels(v){ document.querySelectorAll(".combined-label-check").forEach(x=>x.checked=v); }
+function selectedByClass(cls){ const ids=Array.from(document.querySelectorAll(`.${cls}:checked`)).map(x=>x.value); const all=loadEquipment(); return ids.map(id=>all.find(x=>x.id===id)).filter(Boolean); }
+
+function labelDims(value){ if(value==="40x40") return {w:40,h:40}; if(value==="50x30") return {w:50,h:30}; return {w:60,h:40}; }
+
+function printInspectionLabels(){
+  const items=selectedByClass("inspection-label-check");
+  if(!items.length){ alert("Bitte mindestens ein Arbeitsmittel auswählen."); return; }
+  const dims=labelDims(document.getElementById("inspectionLabelSize")?.value || "60x40");
+  const showLocation=document.getElementById("inspectionShowLocation")?.value!=="no";
+  const company=getGeneralSettings().companyName || "LeiterCheck";
+  const labels=items.map(eq=>{ const d=formatInspectionMonth(eq.nextDate); return `<div class="label"><div class="head">${escapeHtml(company)}</div><div class="title">PRÜFPLAKETTE</div><div class="sub">Nächste Prüfung</div><div class="date">${escapeHtml(d.month)} / ${escapeHtml(d.year)}</div><div class="name">${escapeHtml(eq.name)}</div>${showLocation?`<div class="loc">${escapeHtml(eq.location)}</div>`:""}</div>`; }).join("");
+  const w=window.open("","_blank","width=900,height=800"); if(!w){alert("Das Druckfenster wurde vom Browser blockiert.");return;}
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>LeiterCheck Prüfplaketten</title><style>@page{size:A4;margin:8mm}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif}.sheet{display:flex;flex-wrap:wrap;gap:3mm}.label{width:${dims.w}mm;height:${dims.h}mm;border:.35mm solid #222;border-radius:2mm;padding:2mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;page-break-inside:avoid;overflow:hidden}.head{font-size:7pt;font-weight:bold}.title{font-size:9pt;font-weight:900;margin-top:.5mm}.sub{font-size:7pt}.date{font-size:${dims.h>=40?"20pt":"16pt"};font-weight:900;line-height:1.05;margin:.7mm 0}.name{font-size:7pt;font-weight:bold;line-height:1.05}.loc{font-size:6.5pt;margin-top:.4mm}@media print{.label{border:.3mm solid #000}}</style></head><body><div class="sheet">${labels}</div><script>window.onload=()=>setTimeout(()=>window.print(),250);<\/script></body></html>`); w.document.close();
+}
+
+function printCombinedLabels(){
+  const items=selectedByClass("combined-label-check");
+  if(!items.length){ alert("Bitte mindestens ein Arbeitsmittel auswählen."); return; }
+  const showLocation=document.getElementById("combinedShowLocation")?.value!=="no";
+  const company=getGeneralSettings().companyName || "LeiterCheck";
+  const labels=items.map(eq=>{ const d=formatInspectionMonth(eq.nextDate); const svg=matrixToSvg(makeSimpleQrMatrix(qrPayloadForEquipment(eq.id)),10,4).replace('width="290" height="290"','width="25mm" height="25mm"'); return `<div class="label"><div class="qr">${svg}</div><div class="info"><div class="head">${escapeHtml(company)}</div><div class="title">PRÜFPLAKETTE</div><div class="sub">Nächste Prüfung</div><div class="date">${escapeHtml(d.month)} / ${escapeHtml(d.year)}</div><div class="name">${escapeHtml(eq.name)}</div>${showLocation?`<div class="loc">${escapeHtml(eq.location)}</div>`:""}</div></div>`; }).join("");
+  const w=window.open("","_blank","width=900,height=800"); if(!w){alert("Das Druckfenster wurde vom Browser blockiert.");return;}
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>LeiterCheck QR + Prüfplakette</title><style>@page{size:A4;margin:8mm}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif}.sheet{display:flex;flex-wrap:wrap;gap:3mm}.label{width:70mm;height:40mm;border:.35mm solid #222;border-radius:2mm;padding:2mm;display:flex;align-items:center;gap:2mm;page-break-inside:avoid;overflow:hidden}.qr{width:27mm;line-height:0;flex:0 0 27mm}.info{flex:1;text-align:center;min-width:0}.head{font-size:7pt;font-weight:bold}.title{font-size:9pt;font-weight:900}.sub{font-size:7pt}.date{font-size:18pt;font-weight:900;line-height:1.05;margin:.8mm 0}.name{font-size:7pt;font-weight:bold;line-height:1.05}.loc{font-size:6.5pt;margin-top:.4mm}@media print{.label{border:.3mm solid #000}}</style></head><body><div class="sheet">${labels}</div><script>window.onload=()=>setTimeout(()=>window.print(),250);<\/script></body></html>`); w.document.close();
 }
 
 function showQrBatchPrint(){
@@ -1588,39 +1680,25 @@ async function cloudPushState(showMessage=true){
       if(showMessage) alert("Bitte zuerst anmelden und einem Betrieb beitreten.");
       return;
     }
-    const remoteRows=await cloudRequest(
-  `/rest/v1/leitercheck_state?org_id=eq.${encodeURIComponent(org.org_id)}&select=updated_at`
-);
-
-const remoteUpdated=
-  Array.isArray(remoteRows) && remoteRows[0]?.updated_at
-    ? new Date(remoteRows[0].updated_at).getTime()
-    : 0;
-
-const lastKnownRaw=localStorage.getItem("leitercheck_last_cloud_update");
-const lastKnown=lastKnownRaw ? new Date(lastKnownRaw).getTime() : 0;
-
-if(remoteUpdated && lastKnown && remoteUpdated > lastKnown){
-  await cloudPullState(false);
-  if(showMessage) alert("Neuere Cloud-Daten wurden zuerst geladen.");
-  return;
-}
+    const remoteRows=await cloudRequest(`/rest/v1/leitercheck_state?org_id=eq.${encodeURIComponent(org.org_id)}&select=updated_at`);
+    const remoteUpdated=Array.isArray(remoteRows) && remoteRows[0]?.updated_at ? new Date(remoteRows[0].updated_at).getTime() : 0;
+    const lastKnownRaw=localStorage.getItem("leitercheck_last_cloud_update");
+    const lastKnown=lastKnownRaw ? new Date(lastKnownRaw).getTime() : 0;
+    if(remoteUpdated && lastKnown && remoteUpdated > lastKnown){
+      await cloudPullState(false);
+      if(showMessage) alert("Neuere Cloud-Daten wurden zuerst geladen.");
+      return;
+    }
     const state=buildCloudState();
     await cloudRequest("/rest/v1/leitercheck_state?on_conflict=org_id",{
       method:"POST",
       headers:{"Prefer":"resolution=merge-duplicates,return=minimal"},
       body:{org_id:org.org_id,data:state,updated_by:s.user.id}
     });
-    const savedRows=await cloudRequest(
-  `/rest/v1/leitercheck_state?org_id=eq.${encodeURIComponent(org.org_id)}&select=updated_at`
-);
-
-if(Array.isArray(savedRows) && savedRows[0]?.updated_at){
-  localStorage.setItem(
-    "leitercheck_last_cloud_update",
-    savedRows[0].updated_at
-  );
-}
+    const savedRows=await cloudRequest(`/rest/v1/leitercheck_state?org_id=eq.${encodeURIComponent(org.org_id)}&select=updated_at`);
+    if(Array.isArray(savedRows) && savedRows[0]?.updated_at){
+      localStorage.setItem("leitercheck_last_cloud_update", savedRows[0].updated_at);
+    }
     const el=document.getElementById("cloudSyncStatus");
     if(el) el.textContent="Zuletzt hochgeladen: "+new Date().toLocaleString("de-DE");
     if(showMessage) alert("Daten wurden in die Cloud übertragen.");
@@ -1677,9 +1755,9 @@ function installCloudLocalStorageWatcher(){
   window.__leitercheckCloudWatcher=true;
   const original=Storage.prototype.setItem;
   Storage.prototype.setItem=function(key,value){
-  original.call(this,key,value);
-  if(this===localStorage && CLOUD_DATA_KEYS.includes(key)) scheduleCloudAutoSync();
-};
+    original.call(this,key,value);
+    if(this===localStorage && CLOUD_DATA_KEYS.includes(key)) scheduleCloudAutoSync();
+  };
 }
 
 function currentCloudRole(){
@@ -2940,23 +3018,21 @@ if("serviceWorker" in navigator){
     navigator.serviceWorker.register("./service-worker.js").catch(() => {});
   });
 }
+
 installCloudLocalStorageWatcher();
-  setTimeout(async () => {
+
+setTimeout(async () => {
   const s = cloudSession();
   const org = cloudOrg();
-
-  if (s.access_token && org.org_id) {
-    await cloudPullState(false);
-  }
+  if (s.access_token && org.org_id) await cloudPullState(false);
 }, 1500);
-  setInterval(async () => {
+
+setInterval(async () => {
   const s = cloudSession();
   const org = cloudOrg();
-
-  if (s.access_token && org.org_id) {
-    await cloudPullState(false);
-  }
+  if (s.access_token && org.org_id) await cloudPullState(false);
 }, 30000);
+
 renderChecklist();
 loadEquipment();
 loadLocations();
