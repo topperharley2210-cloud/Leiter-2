@@ -1653,7 +1653,7 @@ function installCloudLocalStorageWatcher(){
   original.call(this,key,value);
   if(this===localStorage && CLOUD_DATA_KEYS.includes(key)) scheduleCloudAutoSync();
 };
-  {
+}
 
 function currentCloudRole(){
   const s=cloudSession(), org=cloudOrg();
