@@ -234,9 +234,8 @@
     <button class="tile" onclick="showDefects()"><div class="icon orange">⚠️</div><h2>Mängel</h2><div class="count"><span class="big orange" id="defectCount">0</span> offen</div></button>
     <button class="tile" onclick="showDueInspections()"><div class="icon red">📅</div><h2>Fällige Prüfungen</h2><div class="count"><span class="big red" id="dueCount">0</span> fällig</div></button>
     <button class="tile" onclick="showProtocols()"><div class="icon blue">📋</div><h2>Prüfprotokolle</h2><div class="count"><span class="big blue" id="protocolCount">0</span> gespeichert</div></button>
-    <button class="tile" onclick="exportExcel()"><div class="icon">📊</div><h2>Jahresübersicht Excel</h2><p>Prüf- und Terminübersicht als Excel-Datei exportieren</p></button>
-    <button class="tile" onclick="exportExcel(true)"><div class="icon">📤</div><h2>Excel teilen</h2><p>Jahresübersicht direkt teilen</p></button>
-  </section>
+    
+  <button class="tile" onclick="showOnly('yearOverviewScreen')"><div class="icon">📊</div><div><h2>Jahresübersicht</h2><p>Prüfdaten nach Jahr exportieren</p></div></button>
 
   <footer class="footer" style="flex-direction:column;align-items:center;gap:12px">
     <button class="settings" onclick="showSettings()"><span style="font-size:1.5rem">⚙️</span> Einstellungen</button>
@@ -246,7 +245,40 @@
     </div>
   </footer>
 </section>
+  
+<section id="yearOverviewScreen" class="hidden">
+  <div class="screen-header">
+    <div class="screen-title">
+      <h2>Jahresübersicht</h2>
+      <p>Prüfdaten nach Jahr exportieren</p>
+    </div>
+    <button class="back-btn" onclick="goHome()">← Start</button>
+  </div>
 
+  <div class="panel">
+    <h3>Jahr auswählen</h3>
+
+    <div class="field">
+      <label for="yearOverviewSelect">Jahr</label>
+      <select id="yearOverviewSelect">
+        <option value="2024">2024</option>
+        <option value="2025">2025</option>
+        <option value="2026" selected>2026</option>
+        <option value="2027">2027</option>
+        <option value="2028">2028</option>
+      </select>
+    </div>
+
+    <div class="actions">
+      <button class="secondary-btn" onclick="exportExcelForYear(false)">
+        Excel herunterladen
+      </button>
+      <button class="primary-btn" onclick="exportExcelForYear(true)">
+        Excel teilen
+      </button>
+    </div>
+  </div>
+</section>
 
 <section id="equipmentHistoryScreen" class="hidden">
   <div class="screen-header">
@@ -2792,13 +2824,28 @@ function excelSheet(name, rows){
   return `<Worksheet ss:Name="${xmlEscape(name)}"><Table>${rows.join("")}</Table></Worksheet>`;
 }
 
-async function exportExcel(shareFile=false){
+async function exportExcel(shareFile=false, year=null){
   const equipment = loadEquipment();
-  const protocols = getProtocols();
-  const defects = flattenDefects();
-  const due = equipment
+  let protocols = getProtocols();
+  let defects = flattenDefects();
+  if(year !== null){
+  protocols = protocols.filter(p => {
+    const y = Number(String(p.date || "").slice(0,4));
+    return y === Number(year);
+  });defects = defects.filter(d => {
+  const y = Number(String(d.date || "").slice(0,4));
+  return y === Number(year);
+});
+  }
+  let due = equipment
     .map(eq => ({eq, state:getDueState(eq.nextDate)}))
     .filter(x => x.state);
+  if(year !== null){
+  due = due.filter(({eq}) => {
+    const y = Number(String(eq.nextDate || "").slice(0,4));
+    return y === Number(year);
+  });
+  }
 
   const equipmentRows = [
     excelRow(["Inventarnummer","Typ","Bezeichnung","Hersteller","Standort","Freigabestatus","Nächste Prüfung","Bemerkungen"], true),
@@ -2898,7 +2945,9 @@ async function exportExcel(shareFile=false){
 
 const blob = new Blob([workbook], {type:"application/vnd.ms-excel"});
 const stamp = new Date().toISOString().slice(0,10);
-const fileName = `LeiterCheck_Export_${stamp}.xls`;
+const fileName = year !== null
+  ? `LeiterCheck_Jahresuebersicht_${year}.xls`
+  : `LeiterCheck_Export_${stamp}.xls`;
 const file = new File([blob], fileName, {
   type:"application/vnd.ms-excel"
 });
@@ -2926,6 +2975,11 @@ a.click();
 a.remove();
 setTimeout(()=>URL.revokeObjectURL(url),1500);
 }
+  function exportExcelForYear(shareFile=false){
+  const select = document.getElementById("yearOverviewSelect");
+  const year = select ? Number(select.value) : new Date().getFullYear();
+  return exportExcel(shareFile, year);
+  }
 function updateHomeCounts(){
   const equipment = loadEquipment();
   document.getElementById("equipmentCount").textContent = equipment.length;
