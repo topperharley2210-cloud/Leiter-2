@@ -235,6 +235,7 @@
     <button class="tile" onclick="showDueInspections()"><div class="icon red">📅</div><h2>Fällige Prüfungen</h2><div class="count"><span class="big red" id="dueCount">0</span> fällig</div></button>
     <button class="tile" onclick="showProtocols()"><div class="icon blue">📋</div><h2>Prüfprotokolle</h2><div class="count"><span class="big blue" id="protocolCount">0</span> gespeichert</div></button>
     <button class="tile" onclick="exportExcel()"><div class="icon">📊</div><h2>Jahresübersicht Excel</h2><p>Prüf- und Terminübersicht als Excel-Datei exportieren</p></button>
+    <button class="tile" onclick="exportExcel(true)"><div class="icon">📤</div><h2>Excel teilen</h2><p>Jahresübersicht direkt teilen</p></button>
   </section>
 
   <footer class="footer" style="flex-direction:column;align-items:center;gap:12px">
@@ -2791,7 +2792,7 @@ function excelSheet(name, rows){
   return `<Worksheet ss:Name="${xmlEscape(name)}"><Table>${rows.join("")}</Table></Worksheet>`;
 }
 
-function exportExcel(){
+async function exportExcel(shareFile=false){
   const equipment = loadEquipment();
   const protocols = getProtocols();
   const defects = flattenDefects();
@@ -2895,16 +2896,35 @@ function exportExcel(){
  ${excelSheet("Fällige Prüfungen", dueRows)}
 </Workbook>`;
 
-  const blob = new Blob([workbook], {type:"application/vnd.ms-excel"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  const stamp = new Date().toISOString().slice(0,10);
-  a.href = url;
-  a.download = `LeiterCheck_Export_${stamp}.xls`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url), 1500);
+const blob = new Blob([workbook], {type:"application/vnd.ms-excel"});
+const stamp = new Date().toISOString().slice(0,10);
+const fileName = `LeiterCheck_Export_${stamp}.xls`;
+const file = new File([blob], fileName, {
+  type:"application/vnd.ms-excel"
+});
+
+if(shareFile && navigator.share && navigator.canShare &&
+   navigator.canShare({files:[file]})){
+  try{
+    await navigator.share({
+      title:"LeiterCheck Jahresübersicht",
+      text:"LeiterCheck Excel-Export",
+      files:[file]
+    });
+    return;
+  }catch(err){
+    if(err.name === "AbortError") return;
+  }
+}
+
+const url = URL.createObjectURL(blob);
+const a = document.createElement("a");
+a.href = url;
+a.download = fileName;
+document.body.appendChild(a);
+a.click();
+a.remove();
+setTimeout(()=>URL.revokeObjectURL(url),1500);
 }
 function updateHomeCounts(){
   const equipment = loadEquipment();
