@@ -760,7 +760,7 @@ function loadEquipment(){
 function saveEquipmentList(list){ localStorage.setItem("leitercheck_equipment", JSON.stringify(list)); }
 function showOnly(id){
   if(id !== "scannerScreen") stopScanner();
-  ["homeScreen","cloudScreen","privacyScreen","equipmentHistoryScreen","equipmentListScreen","printCenterScreen","inspectionLabelScreen","combinedLabelScreen","qrBatchScreen","scannerScreen","qrScreen","editEquipmentScreen","addEquipmentScreen","dueScreen","defectScreen","settingsScreen","inspectionScreen","summaryScreen","protocolDetailScreen","protocolScreen"].forEach(x => document.getElementById(x).classList.toggle("hidden", x !== id));
+["homeScreen","yearOverviewScreen","cloudScreen","privacyScreen","privacyScreen","equipmentHistoryScreen","equipmentListScreen","printCenterScreen","inspectionLabelScreen","combinedLabelScreen","qrBatchScreen","scannerScreen","qrScreen","editEquipmentScreen","addEquipmentScreen","dueScreen","defectScreen","settingsScreen","inspectionScreen","summaryScreen","protocolDetailScreen","protocolScreen"].forEach(x => document.getElementById(x).classList.toggle("hidden", x !== id));
   window.scrollTo({top:0,behavior:"smooth"});
 }
 function goHome(){ updateHomeCounts();
